@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+
+{% block title %}Каталог товаров{% endblock %}
+
+{% block content %}
+<div class="catalog-container">
+    <!-- Фильтры -->
+    <aside class="filters">
+        <h3>Фильтры</h3>
+        <form class="filter-form" method="GET">
+            <!-- Категории -->
+            <div class="filter-section">
+                <h4>Категории</h4>
+                <ul class="category-list">
+                    {% for category in categories %}
+                    <li>
+                        <label>
+                            <input type="checkbox" name="category" value="{{ category.id }}"
+                                   {% if category.id|string in request.args.getlist('category') %}checked{% endif %}>
+                            {{ category.name }}
+                        </label>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <!-- Цена -->
+            <div class="filter-section">
+                <h4>Цена</h4>
+                <div class="price-inputs">
+                    <input type="number" name="price_min" placeholder="От" 
+                           value="{{ request.args.get('price_min', '') }}">
+                    <input type="number" name="price_max" placeholder="До"
+                           value="{{ request.args.get('price_max', '') }}">
+                </div>
+            </div>
+
+            <!-- Сортировка -->
+            <div class="filter-section">
+                <h4>Сортировка</h4>
+                <select name="sort" class="sort-select">
+                    <option value="popular" {% if request.args.get('sort') == 'popular' %}selected{% endif %}>
+                        По популярности
+                    </option>
+                    <option value="price_asc" {% if request.args.get('sort') == 'price_asc' %}selected{% endif %}>
+                        Сначала дешевые
+                    </option>
+                    <option value="price_desc" {% if request.args.get('sort') == 'price_desc' %}selected{% endif %}>
+                        Сначала дорогие
+                    </option>
+                    <option value="new" {% if request.args.get('sort') == 'new' %}selected{% endif %}>
+                        Новинки
+                    </option>
+                </select>
+            </div>
+
+            <button type="submit" class="apply-filters">Применить</button>
+            <a href="{{ url_for('main.catalog') }}" class="reset-filters">Сбросить</a>
+        </form>
+    </aside>
+
+    <!-- Список товаров -->
+    <div class="products-section">
+        <!-- Заголовок и количество товаров -->
+        <div class="catalog-header">
+            <h1>Каталог товаров</h1>
+            <span class="products-count">{{ products.total }} товаров</span>
+        </div>
+
+        <!-- Сетка товаров -->
+        <div class="products-grid">
+            {% for product in products.items %}
+            <div class="product-card">
+                <!-- Изображение товара -->
+                <div class="product-image">
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}">
+                    {% if product.discount %}
+                    <span class="discount-badge">-{{ product.discount }}%</span>
+                    {% endif %}
+                </div>
+
+                <!-- Информация о товаре -->
+                <div class="product-info">
+                    <h3 class="product-title">
+                        <a href="{{ url_for('main.product', product_id=product.id) }}">
+                            {{ product.name }}
+                        </a>
+                    </h3>
+                    
+                    <!-- Цена -->
+                    <div class="product-price">
+                        <span class="current-price">{{ product.price }} ₽</span>
+                        {% if product.old_price %}
+                        <span class="old-price">{{ product.old_price }} ₽</span>
+                        {% endif %}
+                    </div>
+<!-- Кнопка добавления в корзину -->
+                    <button class="add-to-cart" data-product-id="{{ product.id }}"
+                            {% if not product.in_stock %}disabled{% endif %}>
+                        {% if product.in_stock %}
+                            В корзину
+                        {% else %}
+                            Нет в наличии
+                        {% endif %}
+                    </button>
+                </div>
+            </div>
+            {% else %}
+            <div class="no-products">
+                <p>Товары не найдены</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Пагинация -->
+        {% if products.pages > 1 %}
+        <div class="pagination">
+            {% for page in range(1, products.pages + 1) %}
+            <a href="{{ url_for('main.catalog', page=page, **request.args) }}" 
+               class="page-link {% if page == products.page %}active{% endif %}">
+                {{ page }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Обработка фильтров
+    const filterForm = document.querySelector('.filter-form');
+    const sortSelect = document.querySelector('.sort-select');
+
+    // Автоматическая отправка формы при изменении сортировки
+    if (sortSelect) {
+        sortSelect.addEventListener('change', () => {
+            filterForm.submit();
+        });
+    }
+
+    // Добавление в корзину
+    document.querySelectorAll('.add-to-cart').forEach(button => {
+        button.addEventListener('click', async () => {
+            if (button.disabled) return;
+
+            const productId = button.dataset.productId;
+            try {
+                const response = await fetch('/api/cart/add', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        productId: productId,
+                        quantity: 1
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    // Обновляем счетчик корзины
+                    const counter = document.querySelector('.cart-counter');
+                    counter.textContent = data.cartCount;
+                    counter.style.display = 'block';
+
+                    // Показываем уведомление
+                    const message = document.createElement('div');
+                    message.className = 'message success';
+                    message.textContent = 'Товар добавлен в корзину';
+                    document.body.appendChild(message);
+
+                    setTimeout(() => {
+                        message.remove();
+                    }, 3000);
+                }
+            } catch (error) {
+                const message = document.createElement('div');
+                message.className = 'message error';
+                message.textContent = 'Ошибка при добавлении товара';
+                document.body.appendChild(message);
+
+                setTimeout(() => {
+                    message.remove();
+                }, 3000);
+            }
+        });
+    });
+
+    // Мобильные фильтры
+    const showFiltersButton = document.createElement('button');
+    showFiltersButton.className = 'show-filters-button';
+    showFiltersButton.textContent = 'Показать фильтры';
+
+    const filters = document.querySelector('.filters');
+    if (window.innerWidth < 768) {
+        filters.style.display = 'none';
+        document.querySelector('.catalog-header').appendChild(showFiltersButton);
+    }
+
+    showFiltersButton.addEventListener('click', () => {
+        filters.style.display = filters.style.display === 'none' ? 'block' : 'none';
+        showFiltersButton.textContent = filters.style.display === 'none' ? 
+            'Показать фильтры' : 'Скрыть фильтры';
+    });
+window.addEventListener('resize', () => {
+        if (window.innerWidth >= 768) {
+            filters.style.display = 'block';
+            showFiltersButton.style.display = 'none';
+        } else {
+            filters.style.display = 'none';
+            showFiltersButton.style.display = 'block';
+        }
+    });
+</script>
+{% endblock %}

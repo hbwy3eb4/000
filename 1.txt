@@ -1,0 +1,30 @@
+wildberries-clone/
+│
+├── app/
+│   ├── __init__.py
+│   ├── routes.py
+│   ├── models.py
+│   └── forms.py
+│
+├── static/
+│   ├── css/
+│   │   ├── main.css
+│   │   └── product-card.css
+│   ├── js/
+│   │   ├── main.js
+│   │   └── cart.js
+│   └── images/
+│       ├── logo.png
+│       └── products/
+│
+├── templates/
+│   ├── base.html
+│   ├── index.html
+│   ├── catalog.html
+│   ├── product.html
+│   ├── cart.html
+│   └── about.html
+│
+├── config.py
+├── requirements.txt
+└── run.py

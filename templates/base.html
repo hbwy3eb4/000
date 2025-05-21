@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Интернет-магазин{% endblock %}</title>
+
+    <!-- Стили -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/main.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/product-card.css') }}"
+    />
+
+    <!-- Шрифты -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Шапка сайта -->
+    <header class="header">
+      <div class="header-container">
+        <!-- Логотип -->
+        <a href="{{ url_for('main.index') }}" class="logo">
+          <img
+            src="{{ url_for('static', filename='images/logo.png') }}"
+            alt="Логотип"
+          />
+        </a>
+
+        <!-- Поиск -->
+        <div class="search-bar">
+          <form
+            class="search-form"
+            action="{{ url_for('main.search') }}"
+            method="GET"
+          >
+            <input
+              type="text"
+              name="q"
+              class="search-input"
+              placeholder="Поиск товаров..."
+            />
+            <button type="submit" class="search-button">Найти</button>
+          </form>
+        </div>
+
+        <!-- Меню -->
+        <nav class="nav-menu">
+          <a href="{{ url_for('main.catalog') }}" class="nav-link">Каталог</a>
+          <a href="{{ url_for('main.cart') }}" class="nav-link">
+            Корзина
+            <span class="cart-counter">0</span>
+          </a>
+          {% if current_user.is_authenticated %}
+          <a href="{{ url_for('main.profile') }}" class="nav-link">Профиль</a>
+          <a href="{{ url_for('auth.logout') }}" class="nav-link">Выход</a>
+          {% else %}
+          <a href="{{ url_for('auth.login') }}" class="nav-link">Вход</a>
+          <a href="{{ url_for('auth.register') }}" class="nav-link"
+            >Регистрация</a
+          >
+          {% endif %}
+        </nav>
+      </div>
+    </header>
+
+    <!-- Основной контент -->
+    <main class="main-container">
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %} {% endif %} {% endwith %} {% block content %}{% endblock %}
+    </main>
+
+    <!-- Футер -->
+    <footer class="footer">
+      <div class="footer-container">
+        <div class="footer-section">
+          <h3>О компании</h3>
+          <ul class="footer-links">
+            <li><a href="{{ url_for('main.about') }}">О нас</a></li>
+            <li><a href="{{ url_for('main.contacts') }}">Контакты</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h3>Покупателям</h3>
+          <ul class="footer-links">
+            <li><a href="{{ url_for('main.delivery') }}">Доставка</a></li>
+            <li><a href="{{ url_for('main.payment') }}">Оплата</a></li>
+          </ul>
+        </div>
+        <div class="footer-section">
+          <h3>Контакты</h3>
+          <p>Телефон: +7 (999) 123-45-67</p>
+          <p>Email: info@example.com</p>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Скрипты -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

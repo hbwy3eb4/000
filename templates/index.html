@@ -1,0 +1,167 @@
+{% extends "base.html" %} {% block title %}Главная - Интернет-магазин{% endblock
+%} {% block content %}
+<!-- Баннер -->
+<section class="main-banner">
+  <div class="banner-content">
+    <h1>Добро пожаловать в наш магазин</h1>
+    <p>Лучшие товары по выгодным ценам</p>
+    <a href="{{ url_for('main.catalog') }}" class="button-primary"
+      >Перейти в каталог</a
+    >
+  </div>
+</section>
+
+<!-- Популярные категории -->
+<section class="categories">
+  <h2>Популярные категории</h2>
+  <div class="categories-grid">
+    {% for category in categories %}
+    <a
+      href="{{ url_for('main.catalog', category_id=category.id) }}"
+      class="category-card"
+    >
+      <img src="{{ category.image_url }}" alt="{{ category.name }}" />
+      <h3>{{ category.name }}</h3>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Популярные товары -->
+<section class="featured-products">
+  <h2>Популярные товары</h2>
+  <div class="products-grid">
+    {% for product in featured_products %}
+    <div class="product-card">
+      <div class="product-image">
+        <img src="{{ product.image_url }}" alt="{{ product.name }}" />
+        {% if product.discount %}
+        <span class="discount-badge">-{{ product.discount }}%</span>
+        {% endif %}
+      </div>
+      <div class="product-info">
+        <h3>{{ product.name }}</h3>
+        <div class="product-price">
+          <span class="current-price">{{ product.price }} ₽</span>
+          {% if product.old_price %}
+          <span class="old-price">{{ product.old_price }} ₽</span>
+          {% endif %}
+        </div>
+        <button class="add-to-cart" data-product-id="{{ product.id }}">
+          В корзину
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Преимущества -->
+<section class="features">
+  <h2>Наши преимущества</h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <img
+        src="{{ url_for('static', filename='images/delivery.png') }}"
+        alt="Доставка"
+      />
+      <h3>Быстрая доставка</h3>
+      <p>Доставляем заказы по всей России</p>
+    </div>
+    <div class="feature-card">
+      <img
+        src="{{ url_for('static', filename='images/quality.png') }}"
+        alt="Качество"
+      />
+      <h3>Гарантия качества</h3>
+      <p>Только проверенные товары</p>
+    </div>
+    <div class="feature-card">
+      <img
+        src="{{ url_for('static', filename='images/support.png') }}"
+        alt="Поддержка"
+      />
+      <h3>Поддержка 24/7</h3>
+      <p>Всегда на связи с клиентами</p>
+    </div>
+  </div>
+</section>
+
+<!-- Новости и акции -->
+<section class="news-promotions">
+  <h2>Новости и акции</h2>
+  <div class="news-grid">
+    {% for news in latest_news %}
+    <div class="news-card">
+      <img src="{{ news.image_url }}" alt="{{ news.title }}" />
+      <div class="news-content">
+        <h3>{{ news.title }}</h3>
+        <p>{{ news.description }}</p>
+        <span class="news-date">{{ news.date }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- Подписка на рассылку -->
+<section class="newsletter">
+  <div class="newsletter-content">
+    <h2>Подпишитесь на рассылку</h2>
+    <p>Получайте первыми информацию о новинках и скидках</p>
+    <form
+      class="newsletter-form"
+      method="POST"
+      action="{{ url_for('main.subscribe') }}"
+    >
+      <input type="email" name="email" placeholder="Ваш email" required />
+      <button type="submit" class="button-primary">Подписаться</button>
+    </form>
+  </div>
+</section>
+{% endblock %} {% block scripts %}
+<script>
+  // Простой скрипт для добавления в корзину
+  document.querySelectorAll('.add-to-cart').forEach((button) => {
+    button.addEventListener('click', async () => {
+      const productId = button.dataset.productId
+      try {
+        const response = await fetch('/api/cart/add', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            productId: productId,
+            quantity: 1,
+          }),
+        })
+        const data = await response.json()
+        if (data.success) {
+          // Обновляем счетчик корзины
+          const counter = document.querySelector('.cart-counter')
+          counter.textContent = data.cartCount
+          counter.style.display = 'block'
+
+          // Показываем уведомление
+          alert('Товар добавлен в корзину')
+        }
+      } catch (error) {
+        alert('Ошибка при добавлении товара в корзину')
+      }
+    })
+  })
+
+  // Простая валидация формы подписки
+  const newsletterForm = document.querySelector('.newsletter-form')
+  if (newsletterForm) {
+    newsletterForm.addEventListener('submit', (e) => {
+      const email = newsletterForm.querySelector('input[type="email"]').value
+      if (!email.includes('@')) {
+        e.preventDefault()
+        alert('Пожалуйста, введите корректный email')
+      }
+    })
+  }
+</script>
+{% endblock %}

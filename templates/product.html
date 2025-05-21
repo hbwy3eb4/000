@@ -1,0 +1,240 @@
+{% extends "base.html" %} {% block title %}{{ product.name }}{% endblock %} {%
+block content %}
+<div class="product-page">
+  <!-- Путь к товару -->
+  <div class="breadcrumbs">
+    <a href="{{ url_for('main.index') }}">Главная</a> &gt;
+    <a href="{{ url_for('main.catalog') }}">Каталог</a> &gt;
+    <a href="{{ url_for('main.catalog', category_id=product.category.id) }}"
+      >{{ product.category.name }}</a
+    >
+    &gt;
+    <span>{{ product.name }}</span>
+  </div>
+
+  <!-- Основная информация о товаре -->
+  <div class="product-main">
+    <!-- Галерея изображений -->
+    <div class="product-gallery">
+      <div class="main-image">
+        <img
+          src="{{ product.image_url }}"
+          alt="{{ product.name }}"
+          id="main-product-image"
+        />
+      </div>
+      {% if product.images %}
+      <div class="thumbnail-list">
+        {% for image in product.images %}
+        <div class="thumbnail" onclick="changeMainImage('{{ image.url }}')">
+          <img src="{{ image.url }}" alt="{{ product.name }}" />
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Информация о товаре -->
+    <div class="product-info">
+      <h1 class="product-title">{{ product.name }}</h1>
+
+      <!-- Артикул -->
+      <div class="product-sku">Артикул: {{ product.sku }}</div>
+
+      <!-- Цена -->
+      <div class="product-price">
+        <span class="current-price">{{ product.price }} ₽</span>
+        {% if product.old_price %}
+        <span class="old-price">{{ product.old_price }} ₽</span>
+        <span class="discount">-{{ product.discount }}%</span>
+        {% endif %}
+      </div>
+
+      <!-- Наличие -->
+      <div
+        class="stock-status {% if product.in_stock %}in-stock{% else %}out-of-stock{% endif %}"
+      >
+        {% if product.in_stock %} В наличии {% else %} Нет в наличии {% endif %}
+      </div>
+
+      <!-- Добавление в корзину -->
+      <div class="add-to-cart-section">
+        <div class="quantity-control">
+          <button class="decrease" onclick="decreaseQuantity()">-</button>
+          <input
+            type="number"
+            id="quantity"
+            value="1"
+            min="1"
+            max="{{ product.stock }}"
+          />
+          <button class="increase" onclick="increaseQuantity()">+</button>
+        </div>
+        <button
+          class="add-to-cart-button"
+          onclick="addToCart({{ product.id }})"
+          {%
+          if
+          not
+          product.in_stock
+          %}disabled{%
+          endif
+          %}
+        >
+          {% if product.in_stock %} Добавить в корзину {% else %} Нет в наличии
+          {% endif %}
+        </button>
+      </div>
+
+      <!-- Краткое описание -->
+      <div class="product-short-description">
+        {{ product.short_description }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Подробная информация -->
+  <div class="product-details">
+    <div class="tabs">
+      <button class="tab-button active" onclick="showTab('description')">
+        Описание
+      </button>
+      <button class="tab-button" onclick="showTab('characteristics')">
+        Характеристики
+      </button>
+      <button class="tab-button" onclick="showTab('reviews')">Отзывы</button>
+    </div>
+
+    <!-- Описание -->
+    <div id="description" class="tab-content active">
+      {{ product.description|safe }}
+    </div>
+
+    <!-- Характеристики -->
+    <div id="characteristics" class="tab-content">
+      <table class="characteristics-table">
+        {% for spec in product.specifications %}
+        <tr>
+          <td class="char-name">{{ spec.name }}</td>
+          <td class="char-value">{{ spec.value }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+
+    <!-- Отзывы -->
+    <div id="reviews" class="tab-content">
+      {% if product.reviews %}
+      <div class="reviews-list">
+        {% for review in product.reviews %}
+        <div class="review-item">
+          <div class="review-header">
+            <span class="review-author">{{ review.user.name }}</span>
+            <span class="review-date"
+              >{{ review.created_at.strftime('%d.%m.%Y') }}</span
+            >
+          </div>
+          <div class="review-rating">
+            {% for i in range(5) %}
+            <span class="star {% if i < review.rating %}filled{% endif %}"
+              >★</span
+            >
+            {% endfor %}
+          </div>
+          <div class="review-text">{{ review.text }}</div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p>Пока нет отзывов</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Похожие товары -->
+  {% if related_products %}
+  <div class="related-products">
+    <h2>Похожие товары</h2>
+    <div class="products-grid">
+      {% for related in related_products %}
+      <div class="product-card">
+        <img src="{{ related.image_url }}" alt="{{ related.name }}" />
+        <h3>{{ related.name }}</h3>
+        <div class="product-price">{{ related.price }} ₽</div>
+        <button class="add-to-cart" onclick="addToCart({{ related.id }})">
+          В корзину
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %} {% block scripts %}
+<script>
+      // Переключение вкладок
+      function showTab(tabId) {
+          // Скрываем все вкладки
+          document.querySelectorAll('.tab-content').forEach(tab => {
+              tab.classList.remove('active');
+          });
+
+          // Убираем активный класс у всех кнопок
+          document.querySelectorAll('.tab-button').forEach(button => {
+              button.classList.remove('active');
+          });
+
+          // Показываем нужную вкладку
+          document.getElementById(tabId).classList.add('active');
+
+          // Делаем кнопку активной
+          event.target.classList.add('active');
+      }
+
+      // Изменение главного изображения
+      function changeMainImage(imageUrl) {
+          document.getElementById('main-product-image').src = imageUrl;
+      }
+
+      // Управление количеством
+      function decreaseQuantity() {
+          const input = document.getElementById('quantity');
+          const value = parseInt(input.value);
+          if (value > 1) {
+              input.value = value - 1;
+          }
+      }
+
+      function increaseQuantity() {
+          const input = document.getElementById('quantity');
+          const value = parseInt(input.value);
+          const max = parseInt(input.max);
+          if (value < max) {
+              input.value = value + 1;
+          }
+      }
+
+      // Добавление в корзину
+      async function addToCart(productId) {
+          const quantity = parseInt(document.getElementById('quantity').value);
+
+          try {
+              const response = await fetch('/api/cart/add', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                      productId: productId,
+                      quantity: quantity
+                  })
+              });
+  const data = await response.json();
+              if (data.success) {
+                  // Обновляем счетчик корзины
+                  const counter = document.querySelector('.cart-counter');
+                  counter.textContent = data.cartCount;
+                  counter.style.display = 'block';
+
+
+
